@@ -38,7 +38,7 @@
 
 #include "../../InternalHeaderCheck.h"
 
-#if defined(EIGEN_HAS_GPU_FP16) || defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
+#if defined(EIGEN_HAS_GPU_FP16) || EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
 // When compiling with GPU support, the "__half_raw" base class as well as
 // some other routines are defined in the GPU compiler header files
 // (cuda_fp16.h, hip_fp16.h), and they are not tagged constexpr
@@ -95,7 +95,7 @@ struct __half_raw {
 #else
   EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR __half_raw() : x(0) {}
 #endif
-#if defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
+#if EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
   explicit EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR __half_raw(numext::uint16_t raw) : x(numext::bit_cast<__fp16>(raw)) {
   }
   __fp16 x;
@@ -390,7 +390,7 @@ EIGEN_STRONG_INLINE __device__ bool operator >= (const half& a, const half& b) {
 }
 #endif
 
-#if defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC) && !defined(EIGEN_GPU_COMPILE_PHASE)
+#if EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC && !defined(EIGEN_GPU_COMPILE_PHASE)
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC half operator + (const half& a, const half& b) {
   return half(vaddh_f16(a.x, b.x));
 }
@@ -568,7 +568,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC numext::uint16_t raw_half_as_uint16(const 
   // HIP/CUDA/Default have a member 'x' of type uint16_t.
   // For ARM64 native half, the member 'x' is of type __fp16, so we need to bit-cast.
   // For SYCL, cl::sycl::half is _Float16, so cast directly.
-#if defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
+#if EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
   return numext::bit_cast<numext::uint16_t>(h.x);
 #elif defined(SYCL_DEVICE_ONLY)
   return numext::bit_cast<numext::uint16_t>(h);
@@ -598,7 +598,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC __half_raw float_to_half_rtne(float ff) {
   #endif
   return h;
 
-#elif defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
+#elif EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
   __half_raw h;
   h.x = static_cast<__fp16>(ff);
   return h;
@@ -655,6 +655,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC float half_to_float(__half_raw h) {
 #if (defined(EIGEN_HAS_CUDA_FP16) && defined(EIGEN_CUDA_ARCH) && EIGEN_CUDA_ARCH >= 300) || \
   (defined(EIGEN_HAS_HIP_FP16) && defined(EIGEN_HIP_DEVICE_COMPILE))
   return __half2float(h);
+
 #elif defined(EIGEN_HAS_FP16_C)
   #if EIGEN_COMP_MSVC
     // MSVC does not have scalar instructions.
@@ -662,8 +663,10 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC float half_to_float(__half_raw h) {
   #else
     return _cvtsh_ss(h.x);
   #endif
-#elif defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
+
+#elif EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
   return static_cast<float>(h.x);
+
 #else
   const float32_bits magic = { 113 << 23 };
   const unsigned int shifted_exp = 0x7c00 << 13; // exponent mask after shift
@@ -895,7 +898,7 @@ template<> struct NumTraits<Eigen::half>
 
 } // end namespace Eigen
 
-#if defined(EIGEN_HAS_GPU_FP16) || defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
+#if defined(EIGEN_HAS_GPU_FP16) || EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
   #pragma pop_macro("EIGEN_CONSTEXPR")
 #endif
 
